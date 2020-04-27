@@ -106,7 +106,6 @@ for epoch in range(num_epochs):
         total += 1    
 
         running_total_training_loss += float(loss)    
-
     running_avg_training_losses.append(running_total_training_loss/total)
 
     with torch.no_grad():
