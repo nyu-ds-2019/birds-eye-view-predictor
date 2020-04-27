@@ -85,7 +85,7 @@ for epoch in range(num_epochs):
         img, _ = data
         img = img.to(device)
         # ===================forward=====================
-        output = model(img) 
+        output = model(img, noise) 
         loss = criterion(output, img.data)
         # ===================backward====================
         optimizer.zero_grad()
