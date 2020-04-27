@@ -55,10 +55,10 @@ val_loader = torch.utils.data.DataLoader(
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 model = Autoencoder()
-if device.type == 'cuda' and ngpu > 1:
-    model = nn.DataParallel(model, list(range(ngpu)))
+# if device.type == 'cuda' and ngpu > 1:
+#     model = nn.DataParallel(model, list(range(ngpu)))
 
-model.to(device)
+model = model.to(device)
 
 criterion = nn.MSELoss()
 
