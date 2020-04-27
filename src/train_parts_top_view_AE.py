@@ -79,6 +79,9 @@ for epoch in range(num_epochs):
     torch.cuda.empty_cache()
     total = 0
     running_total_training_loss = 0
+
+    print(f'-- running epoch {epoch + 1} --')
+
     for data in train_loader:
         img, _ = data
         img = img.to(device)
@@ -94,11 +97,6 @@ for epoch in range(num_epochs):
 
         running_total_training_loss += float(loss)
 
-        if len(validation_losses) == 0:
-            print(f'epoch [{epoch + 1}/{num_epochs}], data trained:{100 * total / dataset_len :.3f}%, running avg training loss:{running_total_training_loss / total:.4f}')
-        else:
-            print(f'epoch [{epoch + 1}/{num_epochs}], data trained:{100 * total / dataset_len :.3f}%, running avg training loss:{running_total_training_loss / total:.4f}, validation loss (prev epoch):{validation_losses[-1]}')
-    
     running_avg_training_losses.append(running_total_training_loss/total)
 
     with torch.no_grad():
@@ -110,6 +108,9 @@ for epoch in range(num_epochs):
             vloss = criterion(voutput, vimg.data)
             total_vloss += float(vloss)
         validation_losses.append(total_vloss)
+    
+    print(f'epoch [{epoch + 1}/{num_epochs}], data trained:{100 * total / dataset_len :.3f}%, running avg training loss:{running_avg_training_losses[-1]:.4f}')
+    print(validation_losses)
 
     if (epoch + 1) % 10 == 0:
         if torch.cuda.is_available():
