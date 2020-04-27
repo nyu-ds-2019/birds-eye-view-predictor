@@ -1,19 +1,20 @@
 from modules.parts_top_view_AE import Autoencoder
-from modules.module_utils import NormalizeInverse
 
 import torch
 from torch import nn
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
+import torchvision
 from torchvision import transforms
 import torchvision.datasets as datasets
+import os
 
 import numpy as np
 
 np.random.seed(0)
 torch.manual_seed(0)
 
-data = "parts_data"
+data = "../artifacts/data/parts_data"
 batch_size = 64
 workers = 4
 distributed = False
@@ -107,9 +108,9 @@ for epoch in range(num_epochs):
 
     if (epoch + 1) % 10 == 0:
         if torch.cuda.is_available():
-            torch.save(model, 'Models/ae_latent_noise_gpu_model_b64_w2_e'+ str(epoch + 1) +'.pt')
+            torch.save(model, '../artifacts/models/ae_latent_noise_gpu_model_b64_w2_e'+ str(epoch + 1) +'.pt')
             model.to(torch.device('cpu'))
-            torch.save(model, 'Models/ae_latent_noise_cpu_model_b64_w2_e'+ str(epoch + 1) +'.pt')
+            torch.save(model, '../artifacts/models/ae_latent_noise_cpu_model_b64_w2_e'+ str(epoch + 1) +'.pt')
             model.to(device)   
         else:
-            torch.save(model, 'Models/ae_latent_noise_cpu_model_b64_w2_e'+ str(epoch + 1) +'.pt')
+            torch.save(model, '../artifacts/models/ae_latent_noise_cpu_model_b64_w2_e'+ str(epoch + 1) +'.pt')

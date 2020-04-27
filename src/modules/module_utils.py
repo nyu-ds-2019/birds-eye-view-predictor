@@ -1,4 +1,6 @@
+import torch
 from torch import nn
+import torchvision
 
 class Flatten(nn.Module):
     def forward(self, x):
