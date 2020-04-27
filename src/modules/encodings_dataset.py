@@ -35,7 +35,7 @@ class EncodingsDataset():
         parts_image = Image.open(parts_image_path).convert('RGB')
         parts_image = F.to_tensor(parts_image)
 
-        #### TODO normalization
+        parts_image = self.transform(parts_image)
         parts_image_1 = parts_image.view(1, *parts_image.shape)
         with torch.no_grad():
             part_encoding = self.encoder(parts_image_1)

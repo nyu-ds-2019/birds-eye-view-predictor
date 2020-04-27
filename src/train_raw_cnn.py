@@ -13,8 +13,7 @@ import numpy as np
 
 from PIL import Image
 
-#### TODO import Auteencoder correctly
-# from modules.autoencoder import Autoencoder
+from modules.parts_top_view_AE import Autoencoder
 from modules.raw_cnn import CNN 
 from modules.encodings_dataset import EncodingsDataset
 
