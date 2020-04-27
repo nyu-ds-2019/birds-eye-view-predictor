@@ -3,9 +3,7 @@ import torch
 from torchvision.transforms import functional as F
 
 import os
-
 from PIL import Image
-
 
 class EncodingsDataset():
     def __init__(self, artifact_dir, model_file, view, kind, transform):
@@ -33,11 +31,9 @@ class EncodingsDataset():
 
         camera_image = Image.open(camera_image_path).convert('RGB')
         camera_image = F.to_tensor(camera_image) 
-#         camera_image = camera_image.view(1, *camera_image.shape)
 
         parts_image = Image.open(parts_image_path).convert('RGB')
         parts_image = F.to_tensor(parts_image)
-#         parts_image = parts_image.view(1, *parts_image.shape)
 
         #### TODO normalization
         parts_image_1 = parts_image.view(1, *parts_image.shape)
