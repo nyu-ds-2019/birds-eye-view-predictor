@@ -1,3 +1,5 @@
+from torch import nn
+
 class Flatten(nn.Module):
     def forward(self, x):
         return x.view(x.size()[0], -1)
@@ -25,5 +27,8 @@ class NormalizeInverse(torchvision.transforms.Normalize):
 
     def __call__(self, tensor):
         return super().__call__(tensor.clone())
+
+
+#### TODO: use global variable
 inv_normalize = NormalizeInverse(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
