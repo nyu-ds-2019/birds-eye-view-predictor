@@ -95,7 +95,7 @@ for epoch in range(num_epochs):
 
         total += 1    
 
-        running_total_training_loss += loss.item()
+        running_total_training_loss += float(loss)
 
         if len(validation_losses) == 0:
             print(f'epoch [{epoch + 1}/{num_epochs}], data trained:{100 * total / dataset_len :.3f}%, running avg training loss:{running_total_training_loss / total:.4f}')
@@ -111,7 +111,7 @@ for epoch in range(num_epochs):
             vimg = vimg.to(device)
             voutput = model(vimg)
             vloss = criterion(voutput, vimg.data)
-            total_vloss += vloss.item()
+            total_vloss += float(vloss)
         validation_losses.append(total_vloss)
 
     if (epoch + 1) % 10 == 0:
