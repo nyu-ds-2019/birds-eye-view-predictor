@@ -1,1 +1,0 @@
-# birds-eye-view-predictor
