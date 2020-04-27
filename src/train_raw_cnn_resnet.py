@@ -31,7 +31,7 @@ workers = 2
 
 train_dataset = EncodingsDataset(
     '../artifacts',
-    'ae_latent_noise_gpu_model_b64_w2_e10.pt',
+    'ae_latent_noise_gpu_model_b64_w2_e20.pt',
     'front',
     'train',
     transforms.Compose(
@@ -46,7 +46,7 @@ train_dataset = EncodingsDataset(
 
 val_dataset = EncodingsDataset(
     '../artifacts',
-    'ae_latent_noise_gpu_model_b64_w2_e10.pt',
+    'ae_latent_noise_gpu_model_b64_w2_e20.pt',
     'front',
     'val',
     transforms.Compose(
@@ -77,7 +77,7 @@ optimizer = torch.optim.Adam(
 )
 
 
-num_epochs = 50
+num_epochs = 300
 dataset_len = len(train_loader.dataset)
 val_dataset_len = len(val_loader.dataset)
 validation_losses = []
@@ -94,7 +94,7 @@ for epoch in range(num_epochs):
         img, expected_output = data
         img = img.to(device)
         expected_output = expected_output.to(device)
-		expected_output = expected_output.view(expected_output.shape[0], expected_output.shape[2])
+        expected_output = expected_output.view(expected_output.shape[0], expected_output.shape[2])
         # ===================forward=====================
         output = model(img) 
         loss = criterion(output, expected_output)
@@ -106,12 +106,8 @@ for epoch in range(num_epochs):
         total += 1    
 
         running_total_training_loss += float(loss)    
-        if len(validation_losses) == 0:
-            print(f'epoch [{epoch + 1}/{num_epochs}], data trained:{100 * total / dataset_len :.3f}%, training loss:{loss.item():.4f}')
-        else:
-            print(f'epoch [{epoch + 1}/{num_epochs}], data trained:{100 * total / dataset_len :.3f}%, training loss:{loss.item():.4f}, validation loss (prev epoch):{validation_losses[-1]}')
-    
-	running_avg_training_losses.append(running_total_training_loss/total)
+
+    running_avg_training_losses.append(running_total_training_loss/total)
 
     with torch.no_grad():
         total_vloss = 0
@@ -124,10 +120,10 @@ for epoch in range(num_epochs):
         validation_losses.append(total_vloss)
 
 
-	print(f'epoch [{epoch + 1}/{num_epochs}], data trained:{100 * total / dataset_len :.3f}%, running avg training loss:{running_avg_training_losses[-1]:.4f}')
+    print(f'epoch [{epoch + 1}/{num_epochs}], data trained:{100 * total / dataset_len :.3f}%, running avg training loss:{running_avg_training_losses[-1]:.4f}')
     print(validation_losses)
-	
-	if (epoch + 1) % 10 == 0:
+    
+    if (epoch + 1) % 10 == 0:
         if torch.cuda.is_available():
             torch.save(model, '../artifacts/models/cnn_latent_noise_gpu_model_b64_w2_e'+ str(epoch + 1) +'.pt')
             model.to(torch.device('cpu'))
