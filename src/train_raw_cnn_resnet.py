@@ -31,7 +31,7 @@ workers = 2
 
 train_dataset = EncodingsDataset(
     '../artifacts',
-    'ae_latent_noise_cpu_model_b64_w2_e20.pt',
+    'ae_latent_noise_gpu_model_b64_w2_e10.pt',
     'front',
     'train',
     transforms.Compose(
@@ -46,7 +46,7 @@ train_dataset = EncodingsDataset(
 
 val_dataset = EncodingsDataset(
     '../artifacts',
-    'ae_latent_noise_cpu_model_b64_w2_e20.pt',
+    'ae_latent_noise_gpu_model_b64_w2_e10.pt',
     'front',
     'val',
     transforms.Compose(
