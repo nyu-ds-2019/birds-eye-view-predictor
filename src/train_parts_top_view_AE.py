@@ -10,18 +10,24 @@ import torchvision.datasets as datasets
 import os
 
 import numpy as np
+import utils.parser
 
-np.random.seed(0)
-torch.manual_seed(0)
+parser = parser.build_parser()
+(options, args) = parser.parse_args()
 
-data = "../artifacts/data/parts_data"
-batch_size = 64
-workers = 4
-distributed = False
-ngpu = 2
-
+RANDOM_SEED = options.random_seed
+APP_DIR = options.app_dir
+data = os.path.join(APP_DIR, "artifacts/data/parts_data")
+batch_size = options.batch_size
+workers = options.num_workers
+ngpu = options.num_gpus
+learning_rate = options.learning_rate
+num_epochs = options.num_epochs
 train_dir = os.path.join(data, 'train')
 val_dir = os.path.join(data, 'val')
+
+np.random.seed(RANDOM_SEED)
+torch.manual_seed(RANDOM_SEED)
 
 train_dataset = datasets.ImageFolder(
     train_dir,
@@ -32,14 +38,14 @@ train_dataset = datasets.ImageFolder(
                                  std=[0.229, 0.224, 0.225])
     ]))
 
-if distributed:
-    train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
-else:
-    train_sampler = None
-
 train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=(train_sampler is None),
-        num_workers=workers, pin_memory=True, sampler=train_sampler)
+        train_dataset, 
+        batch_size = batch_size, 
+        shuffle = True,
+        num_workers = workers, 
+        pin_memory = True, 
+        sampler = train_sampler
+)
 
 val_loader = torch.utils.data.DataLoader(
     datasets.ImageFolder(val_dir, transforms.Compose([
@@ -48,8 +54,11 @@ val_loader = torch.utils.data.DataLoader(
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
     ])),
-    batch_size=batch_size, shuffle=True,
-    num_workers=workers, pin_memory=True)
+    batch_size = batch_size, 
+    shuffle = True,
+    num_workers = workers, 
+    pin_memory = True
+)
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -62,14 +71,12 @@ model = model.to(device)
 
 criterion = nn.MSELoss()
 
-learning_rate = 1e-3
-
 optimizer = torch.optim.Adam(
     model.parameters(),
     lr=learning_rate,
 )
 
-num_epochs = 50
+
 dataset_len = len(train_loader.dataset)
 val_dataset_len = len(val_loader.dataset)
 validation_losses = []
