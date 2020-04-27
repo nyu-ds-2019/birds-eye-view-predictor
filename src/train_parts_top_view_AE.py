@@ -80,12 +80,10 @@ for epoch in range(num_epochs):
     total = 0
     running_total_training_loss = 0
     for data in train_loader:
-        noise = Variable(torch.randn(batch_size, 1, 64) * 0.3)
-        noise = noise.to(device)
         img, _ = data
         img = img.to(device)
         # ===================forward=====================
-        output = model(img, noise) 
+        output = model(img) 
         loss = criterion(output, img.data)
         # ===================backward====================
         optimizer.zero_grad()
