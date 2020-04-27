@@ -130,3 +130,7 @@ dmypy.json
 
 # Data
 artifacts/
+
+# slurm
+*.slurm
+*.out
