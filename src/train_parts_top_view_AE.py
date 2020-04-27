@@ -18,6 +18,7 @@ data = "../artifacts/data/parts_data"
 batch_size = 64
 workers = 4
 distributed = False
+ngpu = 2
 
 train_dir = os.path.join(data, 'train')
 val_dir = os.path.join(data, 'val')
@@ -54,6 +55,9 @@ val_loader = torch.utils.data.DataLoader(
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 model = Autoencoder().to(device)
+if device.type == 'cuda' and ngpu > 1:
+    model = nn.DataParallel(model, list(range(ngpu)))
+
 criterion = nn.MSELoss()
 
 learning_rate = 1e-3
