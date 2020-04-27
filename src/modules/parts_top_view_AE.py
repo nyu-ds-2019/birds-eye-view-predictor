@@ -51,9 +51,7 @@ class Autoencoder(nn.Module):
             nn.ConvTranspose2d(96, 3, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
         )
 
-    def forward(self, x):
+    def forward(self, x, y):
         x = self.encoder(x)
-        noise = Variable(torch.randn(x.size()) * 0.3)
-        noise = noise.to(self.device)
-        x = self.decoder(x + noise)
+        x = self.decoder(x + y)
         return x
