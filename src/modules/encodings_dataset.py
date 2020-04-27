@@ -1,3 +1,6 @@
+from .parts_top_view_AE import Autoencoder
+from .module_utils import Flatten
+from .module_utils import DeFlatten
 
 import torch
 from torchvision.transforms import functional as F
@@ -12,7 +15,7 @@ class EncodingsDataset():
         self.transform = transform
         
         self.camera_images_dir = os.path.join(artifact_dir, 'data', 'camera_data', kind)
-        self.parts_images_dir = os.path.join(artifact_dir, 'data', 'parts_data', kind)
+        self.parts_images_dir = os.path.join(artifact_dir, 'data', 'parts_data_2', kind)
 
         self.model_dir = os.path.join(artifact_dir, 'models')
         self.model_path = os.path.join(self.model_dir, model_file)
@@ -20,7 +23,7 @@ class EncodingsDataset():
         self.camera_image_names = self._get_camera_images_by_view(self.camera_images_dir, view)
         self.parts_image_names = self._get_camera_images_by_view(self.parts_images_dir, view)
         
-        self.encoder = torch.load(self.model_path, map_location={'cuda:0': 'cpu'}).encoder
+        self.encoder = torch.load(self.model_path).encoder
     
     def __getitem__(self, idx):
         assert self.camera_image_names[idx] == self.parts_image_names[idx]

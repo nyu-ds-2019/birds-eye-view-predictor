@@ -1,6 +1,6 @@
 # Import some libraries
 from torch import nn
-from module_utils import Flatten
+from .module_utils import Flatten
 
 class CNN(nn.Module):
     def __init__(self):

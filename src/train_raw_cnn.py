@@ -1,4 +1,9 @@
 # Import some libraries
+from modules.parts_top_view_AE import Autoencoder
+from modules.raw_cnn import CNN 
+from modules.encodings_dataset import EncodingsDataset
+from modules.module_utils import Flatten
+from modules.module_utils import DeFlatten
 
 import torch
 import torchvision
@@ -13,19 +18,7 @@ import numpy as np
 
 from PIL import Image
 
-from modules.parts_top_view_AE import Autoencoder
-from modules.raw_cnn import CNN 
-from modules.encodings_dataset import EncodingsDataset
-
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-model = Autoencoder()
-model.load_state_dict(torch.load('Models/s_gpu_model_b64_w2_e50.pt'))
-encoder = model.encoder
-decoder = model.decoder
-
-decoder = decoder.to(device)
-encoder = encoder.to(device)
 
 model = CNN().to(device)
 criterion = nn.MSELoss()
@@ -35,23 +28,23 @@ batch_size = 32
 workers = 2
 
 train_dataset = EncodingsDataset(
-    'artifacts',
-    'ae_latent_noise_gpu_model_b64_w2_e10.pt',
+    '../artifacts',
+    'ae_latent_noise_cpu_model_b64_w2_e20.pt',
     'front',
     'train',
     transforms.Compose(
         [
             transforms.Normalize(
                 mean = [0.485, 0.456, 0.406],
-                std = [0.229, 0.224, 0.225]
+                std = [0.229, 0.224, 0.225],
             )
         ]
     )
 )
 
 val_dataset = EncodingsDataset(
-    'artifacts',
-    'ae_latent_noise_gpu_model_b64_w2_e10.pt',
+    '../artifacts',
+    'ae_latent_noise_cpu_model_b64_w2_e20.pt',
     'front',
     'val',
     transforms.Compose(
@@ -98,14 +91,13 @@ for epoch in range(num_epochs):
         output = model(img) 
 #         output.view(output.shape[0], output.shape[2]).shape
         print(output.shape)
+        expected_output = expected_output.view(expected_output.shape[0], expected_output.shape[2])
         print(expected_output.shape)
         loss = criterion(output, expected_output)
         # ===================backward====================
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-                
-        clear_output(wait=True)
         total += len(data[0])     
         if len(validation_losses) == 0:
             print(f'epoch [{epoch + 1}/{num_epochs}], data trained:{100 * total / dataset_len :.3f}%, training loss:{loss.item():.4f}')
@@ -133,7 +125,7 @@ for epoch in range(num_epochs):
 #         training_losses.append(total_tloss)
 
     if (epoch + 1) % 10 == 0:
-        torch.save(model, 'artifacts/models/cnn_gpu_model_b64_w2_e'+ str(epoch + 1) +'.pt')
+        torch.save(model, '../artifacts/models/cnn_gpu_model_b64_w2_e'+ str(epoch + 1) +'.pt')
         model.to(torch.device('cpu'))
-        torch.save(model, 'artifacts/models/cnn_cpu_model_b64_w2_e'+ str(epoch + 1) +'.pt')
+        torch.save(model, '../artifacts/models/cnn_cpu_model_b64_w2_e'+ str(epoch + 1) +'.pt')
         model.to(device)
