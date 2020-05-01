@@ -1,2 +1,2 @@
-
-sbatch --export=filename='$1' sbatch_run.slurm
+filename = $1
+sbatch --export=filename='$filename' sbatch_run.slurm
