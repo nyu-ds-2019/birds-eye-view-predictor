@@ -141,3 +141,6 @@ src/30-OOM/*
 
 # videos
 *.avi
+
+# pytorch models
+*.pt
