@@ -26,6 +26,7 @@ class EncodingsDataset():
         self.parts_image_names = self._get_camera_images_by_view(self.parts_images_dir, view)
         
         self.encoder = torch.load(self.model_path).encoder.to(torch.device('cpu'))
+        self.encoder = self.encoder.eval()
     
     def __getitem__(self, idx):
         assert self.camera_image_names[idx] == self.parts_image_names[idx]
