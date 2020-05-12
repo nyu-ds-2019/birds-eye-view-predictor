@@ -137,3 +137,6 @@ artifacts/
 
 # videos
 *.avi
+
+.DS_Store
+*.pt
