@@ -130,10 +130,14 @@ dmypy.json
 
 # Data
 artifacts/
+*scratch*
 
 # slurm
 *.slurm
 *.out
+
+src/30-OOM/*
+*.zip
 
 # videos
 *.avi

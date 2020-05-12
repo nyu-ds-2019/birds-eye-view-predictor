@@ -8,6 +8,8 @@ from torchvision.transforms import functional as F
 import os
 from PIL import Image
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 class EncodingsDataset():
     def __init__(self, artifact_dir, model_file, view, kind, transform):
         self.artifact_dir = artifact_dir
@@ -23,7 +25,8 @@ class EncodingsDataset():
         self.camera_image_names = self._get_camera_images_by_view(self.camera_images_dir, view)
         self.parts_image_names = self._get_camera_images_by_view(self.parts_images_dir, view)
         
-        self.encoder = torch.load(self.model_path).encoder
+        self.encoder = torch.load(self.model_path).encoder.to(torch.device('cpu'))
+        self.encoder = self.encoder.eval()
     
     def __getitem__(self, idx):
         assert self.camera_image_names[idx] == self.parts_image_names[idx]
@@ -40,6 +43,7 @@ class EncodingsDataset():
 
         parts_image = self.transform(parts_image)
         parts_image_1 = parts_image.view(1, *parts_image.shape)
+        parts_image_1 = parts_image_1.to(torch.device('cpu'))
         with torch.no_grad():
             part_encoding = self.encoder(parts_image_1)
         

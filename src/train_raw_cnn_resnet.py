@@ -107,16 +107,18 @@ for epoch in range(num_epochs):
 
         running_total_training_loss += float(loss)    
     running_avg_training_losses.append(running_total_training_loss/total)
-
+    print('in val')
     with torch.no_grad():
         total_vloss = 0
         for val_data in val_loader:
             vimg, v_expected_output = val_data
+            v_expected_output = v_expected_output.view(v_expected_output.shape[0], v_expected_output.shape[2])
             vimg = vimg.to(device)
+            v_expected_output = v_expected_output.to(device)
             voutput = model(vimg)
             vloss = criterion(voutput, v_expected_output)
-            total_vloss += vloss
-        validation_losses.append(total_vloss)
+            total_vloss += float(vloss)
+        validation_losses.append(total_vloss / val_dataset_len)
 
 
     print(f'epoch [{epoch + 1}/{num_epochs}], data trained:{100 * total / dataset_len :.3f}%, running avg training loss:{running_avg_training_losses[-1]:.4f}')
@@ -130,3 +132,4 @@ for epoch in range(num_epochs):
             model.to(device)   
         else:
             torch.save(model, '../artifacts/models/cnn_latent_noise_cpu_model_b64_w2_e'+ str(epoch + 1) +'.pt')
+
