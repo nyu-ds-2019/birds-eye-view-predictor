@@ -142,7 +142,7 @@ src/30-OOM/*
 # videos
 *.avi
 
-# pytorch models
+.DS_Store
 *.pt
 
 .DS_Store
