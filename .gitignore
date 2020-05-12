@@ -144,3 +144,5 @@ src/30-OOM/*
 
 # pytorch models
 *.pt
+
+.DS_Store
