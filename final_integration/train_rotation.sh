@@ -4,4 +4,4 @@ python3 rotation/train.py \
     --batch_size 16 \
     --num_epochs 100 \
     --save_freq 10 \
-    --lr 0.003 \
+    --lr 0.003
