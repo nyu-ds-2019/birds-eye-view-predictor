@@ -2,6 +2,7 @@ import os
 import random
 import time
 import copy
+import argparse
 
 import numpy as np
 import pandas as pd
@@ -47,7 +48,7 @@ def generate_rotation_data(images, post_transforms):
     return images, expected_outputs
 
 
-def train_model(model, dataloaders, data_generator, train_post_transforms, criterion, optimizer, device, checkpoint_path, f, verbIter, num_epochs=25, scheduler = None):
+def train_model(model, dataloaders, data_generator, train_post_transforms, criterion, optimizer, device, checkpoint_path, f, verbIter, num_epochs=25, scheduler = None, save_freq = 1):
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -129,8 +130,10 @@ def train_model(model, dataloaders, data_generator, train_post_transforms, crite
             if phase == 'val' and top_1_acc > best_acc:
                 best_acc = top_1_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
+                torch.save(model.state_dict(), '%s/best_rotation_net.pt' % (checkpoint_path))
 
-            torch.save(model.state_dict(), '%s/net_epoch_%d.pth' % (checkpoint_path, epoch))
+        if (epoch + 1) % save_freq == 0:
+            torch.save(model.state_dict(), '%s/rotation_net_epoch_%d.pt' % (checkpoint_path, epoch))
 
     time_elapsed = time.time() - since
     f.write('Training complete in {:.0f}m {:.0f}s \n'.format(time_elapsed // 60, time_elapsed % 60))
@@ -141,19 +144,37 @@ def train_model(model, dataloaders, data_generator, train_post_transforms, crite
     model.load_state_dict(best_model_wts)
     return model
 
+def get_args():
+    parser 	= argparse.ArgumentParser(description="MonoLayout options")
+    parser.add_argument("--data_path", type=str, default="./data",
+                         help="Path to the root data directory")
+    parser.add_argument("--save_path", type=str, default="./models/",
+                         help="Path to save models")
+    parser.add_argument("--batch_size", type=int, default=16,
+                         help="Mini-Batch size")
+    parser.add_argument("--num_epochs", type=int, default=100,
+                         help="Max number of training epochs")
+    parser.add_argument("--save_freq", type=int, default=5,
+                         help="Model saving frequency")
+    parser.add_argument("--lr", type=float, default=0.003,
+                         help="Model saving frequency")
+
+    return parser.parse_args()
 
 def main():
     
+    opt = get_args()
+
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-    data_dir = '/home/prs392/codes/top_view_predictor/artifacts/data'
+    data_dir = self.opt.data_path
 
     image_folder = data_dir
     annotation_csv = f'{data_dir}/annotation.csv'
         
 
-    batch_size = 32
+    batch_size = opt.batch_size
 
     train_pre_transforms = torchvision.transforms.Compose([
         torchvision.transforms.RandomHorizontalFlip()
@@ -205,13 +226,6 @@ def main():
         collate_fn=collate_fn
     )
 
-#     count = 0
-#     for i, data in enumerate(train_loader):
-#         images, targets = data
-#         samples, expected_outputs = generate_rotation_data(images, train_post_transforms)
-
-#         count += 1
-#         break
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
@@ -222,12 +236,7 @@ def main():
                                     nn.LogSoftmax(dim=1))
 
     model = ResNet(pretrained = False, ssl_pretrained = False, ssl_pretrained_dict_path = '', fc_layer=fc_layer).model
-#     model = models.resnet18(pretrained=False)
-#     model.fc = nn.Sequential(nn.Linear(512, 512),
-#                                     nn.ReLU(),
-#                                     nn.Dropout(0.2),
-#                                     nn.Linear(512, 4),
-#                                     nn.LogSoftmax(dim=1))
+    
     model = model.to(device)
 
     dataloaders = {}
@@ -235,11 +244,13 @@ def main():
     dataloaders['val'] = val_loader
 
     criterion = nn.NLLLoss()
-    optimizer_conv = optim.Adam(model.parameters(), lr=0.003)
+    optimizer_conv = optim.Adam(model.parameters(), lr=opt.lr)
 
     f = open("{}/training_logs.txt".format('.'), "w+")
 
-    model_ft = train_model(model, dataloaders, generate_rotation_data, train_post_transforms, criterion, optimizer_conv, device, '/scratch/prs392/models/rotation_ssl', f, 100, num_epochs=50)
+    checkpoint_path = opt.save_path
+
+    model_ft = train_model(model, dataloaders, generate_rotation_data, train_post_transforms, criterion, optimizer_conv, device, checkpoint_path, f, verbIter=100, num_epochs=opt.num_epochs, save_freq=opt.save_freq)
 
 
 if __name__ == "__main__":
