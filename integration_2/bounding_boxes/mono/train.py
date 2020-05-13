@@ -28,14 +28,14 @@ import dataloader
 
 def get_args():
     parser 	= argparse.ArgumentParser(description="MonoLayout options")
-    parser.add_argument("--data_path", type=str, default="./data",
+    parser.add_argument("--data_path", type=str, default="",
                          help="Path to the root data directory")
-    parser.add_argument("--save_path", type=str, default="./models/",
+    parser.add_argument("--save_path", type=str, default="",
                          help="Path to save models")
     parser.add_argument("--model_name", type=str, default="monolayout",
                          help="Model Name with specifications")
-    parser.add_argument("--split", type=str, choices=["argo", "3Dobject", "odometry"],
-                         help="Data split for training/validation")
+    # parser.add_argument("--split", type=str, choices=["argo", "3Dobject", "odometry"],
+    #                      help="Data split for training/validation")
     parser.add_argument("--ext", type=str, default="png",
                          help="File extension of the images")
     parser.add_argument("--height", type=int, default=512,
@@ -135,7 +135,7 @@ class Trainer:
                         "odometry": dataloader.KITTIOdometry,
                         "argo":     dataloader.Argoverse}
 
-        self.dataset = dataset_dict[self.opt.split]
+        self.dataset = dataset_dict["3Dobject"]
         fpath = os.path.join(os.path.dirname(__file__), "splits", "{}_files.txt")
 
         train_filenames = readlines(fpath.format("train"))
@@ -154,7 +154,7 @@ class Trainer:
                                        num_workers=self.opt.num_workers, pin_memory=True, drop_last=True)
 
 
-        print("Using split:\n  ", self.opt.split)
+        # print("Using split:\n  ", self.opt.split)
         print("There are {:d} training items and {:d} validation items\n".format(
             len(train_dataset), len(val_dataset)))
 
@@ -283,7 +283,7 @@ class Trainer:
         return output.mean()
 
     def save_model(self):
-        save_path = os.path.join(self.opt.save_path, self.opt.model_name, self.opt.split, "weights_{}".format(self.epoch))
+        save_path = os.path.join(self.opt.save_path, self.opt.model_name, "weights_{}".format(self.epoch))
 
         if not os.path.exists(save_path):
             os.makedirs(save_path)

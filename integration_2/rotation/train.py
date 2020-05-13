@@ -168,7 +168,7 @@ def main():
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-    data_dir = self.opt.data_path
+    data_dir = opt.data_path
 
     image_folder = data_dir
     annotation_csv = f'{data_dir}/annotation.csv'
@@ -236,7 +236,7 @@ def main():
                                     nn.LogSoftmax(dim=1))
 
     model = ResNet(pretrained = False, ssl_pretrained = False, ssl_pretrained_dict_path = '', fc_layer=fc_layer).model
-    
+
     model = model.to(device)
 
     dataloaders = {}
@@ -247,6 +247,9 @@ def main():
     optimizer_conv = optim.Adam(model.parameters(), lr=opt.lr)
 
     f = open("{}/training_logs.txt".format('.'), "w+")
+
+    if not os.path.isdir(opt.save_path):
+        os.makedirs(save_path)
 
     checkpoint_path = opt.save_path
 

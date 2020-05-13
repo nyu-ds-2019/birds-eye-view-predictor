@@ -1,4 +1,5 @@
-from optparse import OptionParser
+import os
+import argparse
 from math import tan, radians
 
 from data_helper import UnlabeledDataset, LabeledDataset
@@ -138,155 +139,178 @@ def crop_by_view(masked_bbox_image_PIL, view, size):
     return image2
 
 
-# parser = OptionParser()
-# parser.add_option('--train-views', dest = 'train_views', default = 0, type = 'string', help = 'views to be trained (comma separated)')
-# (options, args) = parser.parse_args()
+def get_args():
+    parser 	= argparse.ArgumentParser(description="MonoLayout options")
+    parser.add_argument("--train_views", type=str, default="front_left, front, front_right, back_left, back, back_right",
+                         help="Views to be generated")
+    parser.add_argument("--data_path", type=str, default="../../artifacts/data",
+                         help="Path to the root data directory")
+    parser.add_argument("--save_path", type=str, default="../../artifacts/data_mono",
+                         help="Path to save models")
 
-# views = options.train_views.replace(' ', '').split(',')
-
-views = ['front_left', 'front', 'front_right', 'back_left', 'back', 'back_right']
-
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
-
-data_dir = '/home/prs392/codes/top_view_predictor/artifacts/data'
-
-image_folder = data_dir
-annotation_csv = f'{data_dir}/annotation.csv'
-    
-
-batch_size = 32
-
-train_pre_transforms = torchvision.transforms.Compose([
-    torchvision.transforms.ToTensor()
-])
-
-val_pre_transforms = torchvision.transforms.Compose([
-    torchvision.transforms.ToTensor()
-])
-
-train_post_transforms = torchvision.transforms.Compose([
-    torchvision.transforms.ToTensor(),
-    torchvision.transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-])
-
-val_post_transforms = torchvision.transforms.Compose([
-    torchvision.transforms.ToTensor(),
-    torchvision.transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-])
+    return parser.parse_args()
 
 
-train_set = LabeledDataset(
-    image_folder = image_folder,
-    scene_index = np.arange(106, 131),
-    annotation_file=annotation_csv,
-    transform = train_pre_transforms
-)
+def main():
 
-train_loader = torch.utils.data.DataLoader(
-    train_set,
-    batch_size=batch_size,
-    shuffle=False,
-    num_workers=2,
-    collate_fn=collate_fn
-)
+    opt = get_args()
 
-val_set = LabeledDataset(
-    image_folder = image_folder,
-    scene_index = np.arange(131, 134),
-    annotation_file=annotation_csv,
-    transform = val_pre_transforms
-)
+    views = opt.train_views.replace(' ', '').split(',')
 
-val_loader = torch.utils.data.DataLoader(
-    val_set,
-    batch_size=batch_size,
-    shuffle=False,
-    num_workers=2,
-    collate_fn=collate_fn
-)
+    # views = ['front_left', 'front', 'front_right', 'back_left', 'back', 'back_right']
 
-directory = '/scratch/prs392/data/submission_monolayout'
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
-view_to_index = {
-    'front_left': 0,
-    'front': 1,
-    'front_right': 2,
-    'back_left': 3,
-    'back': 4,
-    'back_right': 5
-}
+    data_dir = opt.data_path
 
-count = 0
-
-for sample, target, road_image, extra in train_loader:
-    
-    assert len(sample) == len(road_image)
-    
-    for i in range(len(road_image)):
+    image_folder = data_dir
+    annotation_csv = f'{data_dir}/annotation.csv'
         
-        file_name = "{0:0=6d}".format(count) + ".png"
-        
-        road_image_tensor = road_image[i].int()
-        road_image_tensor[road_image_tensor == 1] = 255
-        road_image_PIL = torchvision.transforms.ToPILImage(mode = None)(road_image_tensor.cpu()).convert('RGB')
-        blank_top_view = Image.new(mode='RGB', size = (road_image_PIL.size), color=(0,0,0))
-        bbox_image_PIL = draw_bboxes(blank_top_view, target[i]['bounding_box'], target[i]['category'])
-        bbox_image_PIL.save(f"{directory}/merged_top_views/{file_name}")
 
+    batch_size = 32
+
+    train_pre_transforms = torchvision.transforms.Compose([
+        torchvision.transforms.ToTensor()
+    ])
+
+    val_pre_transforms = torchvision.transforms.Compose([
+        torchvision.transforms.ToTensor()
+    ])
+
+    train_post_transforms = torchvision.transforms.Compose([
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+    ])
+
+    val_post_transforms = torchvision.transforms.Compose([
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+    ])
+
+
+    train_set = LabeledDataset(
+        image_folder = image_folder,
+        scene_index = np.arange(106, 131),
+        annotation_file=annotation_csv,
+        transform = train_pre_transforms
+    )
+
+    train_loader = torch.utils.data.DataLoader(
+        train_set,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=2,
+        collate_fn=collate_fn
+    )
+
+    val_set = LabeledDataset(
+        image_folder = image_folder,
+        scene_index = np.arange(131, 134),
+        annotation_file=annotation_csv,
+        transform = val_pre_transforms
+    )
+
+    val_loader = torch.utils.data.DataLoader(
+        val_set,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=2,
+        collate_fn=collate_fn
+    )
+
+    directory = opt.save_path
+
+    if not os.path.isdir(directory):
+        os.makedirs(f"{directory}/merged_top_views")
         for view in views:
-            
-            original = torchvision.transforms.ToPILImage(mode='RGB')(sample[i][view_to_index[view]]).resize((512, 512))
-            original.save(f"{directory}/{view}/image_2/{file_name}")
-            
-            bbox_image_PIL_2 = bbox_image_PIL.copy()
+            os.makedirs(f"{directory}/{view}/image_2")
+            os.makedirs(f"{directory}/{view}/TV_car")
 
-            masked_bbox_image_PIL = mask_bbox_image_by_view(bbox_image_PIL_2, view, (800, 800))
-            
-            masked_bbox_image_tensor = to_tensor(masked_bbox_image_PIL)
-            
-            test = torchvision.transforms.ToPILImage(mode = 'RGB')(masked_bbox_image_tensor.cpu())
-            
-            # Cropping
-            
-            cropped_image = crop_by_view(masked_bbox_image_PIL, view, (800, 800)).resize((256, 256))
-            
-            cropped_image.save(f"{directory}/{view}/TV_car/{file_name}")
-            
-        count += 1
-            
-for sample, target, road_image, extra in val_loader:
-    
-    assert len(sample) == len(road_image)
-    
-    for i in range(len(road_image)):
+
+    view_to_index = {
+        'front_left': 0,
+        'front': 1,
+        'front_right': 2,
+        'back_left': 3,
+        'back': 4,
+        'back_right': 5
+    }
+
+    count = 0
+
+    for sample, target, road_image, extra in train_loader:
         
-        file_name = "{0:0=6d}".format(count) + ".png"
+        assert len(sample) == len(road_image)
         
-        road_image_tensor = road_image[i].int()
-        road_image_tensor[road_image_tensor == 1] = 255
-        road_image_PIL = torchvision.transforms.ToPILImage(mode = None)(road_image_tensor.cpu()).convert('RGB')
-        blank_top_view = Image.new(mode='RGB', size = (road_image_PIL.size), color=(0,0,0))
-        bbox_image_PIL = draw_bboxes(blank_top_view, target[i]['bounding_box'], target[i]['category'])
-        bbox_image_PIL.save(f"{directory}/merged_top_views/{file_name}")
+        for i in range(len(road_image)):
+            
+            file_name = "{0:0=6d}".format(count) + ".png"
+            
+            road_image_tensor = road_image[i].int()
+            road_image_tensor[road_image_tensor == 1] = 255
+            road_image_PIL = torchvision.transforms.ToPILImage(mode = None)(road_image_tensor.cpu()).convert('RGB')
+            blank_top_view = Image.new(mode='RGB', size = (road_image_PIL.size), color=(0,0,0))
+            bbox_image_PIL = draw_bboxes(blank_top_view, target[i]['bounding_box'], target[i]['category'])
+            bbox_image_PIL.save(f"{directory}/merged_top_views/{file_name}")
 
-        for view in views:
-            
-            original = torchvision.transforms.ToPILImage(mode='RGB')(sample[i][view_to_index[view]]).resize((512, 512))
-            original.save(f"{directory}/{view}/image_2/{file_name}")
-            
-            bbox_image_PIL_2 = bbox_image_PIL.copy()
+            for view in views:
+                
+                original = torchvision.transforms.ToPILImage(mode='RGB')(sample[i][view_to_index[view]]).resize((512, 512))
+                original.save(f"{directory}/{view}/image_2/{file_name}")
+                
+                bbox_image_PIL_2 = bbox_image_PIL.copy()
 
-            masked_bbox_image_PIL = mask_bbox_image_by_view(bbox_image_PIL_2, view, (800, 800))
+                masked_bbox_image_PIL = mask_bbox_image_by_view(bbox_image_PIL_2, view, (800, 800))
+                
+                masked_bbox_image_tensor = to_tensor(masked_bbox_image_PIL)
+                
+                test = torchvision.transforms.ToPILImage(mode = 'RGB')(masked_bbox_image_tensor.cpu())
+                
+                # Cropping
+                
+                cropped_image = crop_by_view(masked_bbox_image_PIL, view, (800, 800)).resize((256, 256))
+                
+                cropped_image.save(f"{directory}/{view}/TV_car/{file_name}")
+                
+            count += 1
+                
+    for sample, target, road_image, extra in val_loader:
+        
+        assert len(sample) == len(road_image)
+        
+        for i in range(len(road_image)):
             
-            masked_bbox_image_tensor = to_tensor(masked_bbox_image_PIL)
+            file_name = "{0:0=6d}".format(count) + ".png"
             
-            test = torchvision.transforms.ToPILImage(mode = 'RGB')(masked_bbox_image_tensor.cpu())
-            
-            # Cropping
-            
-            cropped_image = crop_by_view(masked_bbox_image_PIL, view, (800, 800)).resize((256, 256))
-            
-            cropped_image.save(f"{directory}/{view}/TV_car/{file_name}")
-            
-        count += 1
+            road_image_tensor = road_image[i].int()
+            road_image_tensor[road_image_tensor == 1] = 255
+            road_image_PIL = torchvision.transforms.ToPILImage(mode = None)(road_image_tensor.cpu()).convert('RGB')
+            blank_top_view = Image.new(mode='RGB', size = (road_image_PIL.size), color=(0,0,0))
+            bbox_image_PIL = draw_bboxes(blank_top_view, target[i]['bounding_box'], target[i]['category'])
+            bbox_image_PIL.save(f"{directory}/merged_top_views/{file_name}")
+
+            for view in views:
+                
+                original = torchvision.transforms.ToPILImage(mode='RGB')(sample[i][view_to_index[view]]).resize((512, 512))
+                original.save(f"{directory}/{view}/image_2/{file_name}")
+                
+                bbox_image_PIL_2 = bbox_image_PIL.copy()
+
+                masked_bbox_image_PIL = mask_bbox_image_by_view(bbox_image_PIL_2, view, (800, 800))
+                
+                masked_bbox_image_tensor = to_tensor(masked_bbox_image_PIL)
+                
+                test = torchvision.transforms.ToPILImage(mode = 'RGB')(masked_bbox_image_tensor.cpu())
+                
+                # Cropping
+                
+                cropped_image = crop_by_view(masked_bbox_image_PIL, view, (800, 800)).resize((256, 256))
+                
+                cropped_image.save(f"{directory}/{view}/TV_car/{file_name}")
+                
+            count += 1
+
+
+if __name__ == "__main__":
+    main()
