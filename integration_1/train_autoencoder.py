@@ -27,12 +27,11 @@ parser.add_option('--learning-rate', dest = 'learning_rate', default = 1e-3, typ
 parser.add_option('--num-epochs', dest = 'num_epochs', default = 50, type = 'int', help = 'number of epochs')
 parser.add_option('--random-seed', dest = 'random_seed', default = 0, type = 'int', help = 'random seed')
 parser.add_option('--data-directory', dest = 'data_directory', default = '.', type = 'string', help = 'data path')
-parser.add_option('--model-directory', dest = 'model_directory', default = '.', type = 'string', help = 'model save path')
+parser.add_option('--model-directory', dest = 'model_directory', default = '', type = 'string', help = 'model save path')
 
 (options, args) = parser.parse_args()
 
 RANDOM_SEED = options.random_seed
-APP_DIR = options.app_dir
 
 batch_size = options.batch_size
 workers = options.num_workers
@@ -86,7 +85,8 @@ val_dataset_len = len(val_loader.dataset)
 validation_losses = []
 running_avg_training_losses = []
 views = ['front_left', 'front', 'front_right', 'back_left', 'back', 'back_right']
-
+best_vloss = 1e10
+save_best_model = False
 
 for epoch in range(num_epochs):
     torch.cuda.empty_cache()
@@ -116,7 +116,7 @@ for epoch in range(num_epochs):
         total_vloss = 0
         
 
-        for sample, target, road_image, extra in train_loader:
+        for sample, target, road_image, extra in val_loader:
             for view in views:
                 masked_road_image_tensor = mask_road_image_by_view(road_image, view, (800, 800))
                 masked_road_image_tensor = masked_road_image_tensor.to(device)
@@ -125,11 +125,22 @@ for epoch in range(num_epochs):
                 vloss = criterion(output, masked_road_image_tensor)
 
                 total_vloss += float(vloss)
+        
+        if total_vloss < best_vloss:
+            print(f'Best performing validation model at {epoch}')
+            best_vloss = total_vloss
+            save_best_model = True
+        
         validation_losses.append(total_vloss)
-    
+        
     print(f'epoch [{epoch + 1}/{num_epochs}], data trained:{100 * total / dataset_len :.3f}%, running avg training loss:{running_avg_training_losses[-1]:.4f}')
     print(validation_losses)
-
-    if (epoch + 1) % 1 == 0:
+    
+    if (epoch + 1) % 10 == 0:
         torch.save(model.state_dict(), os.path.join(model_directory, 'ae'+ str(epoch + 1) +'.pt'))
+        
+    if save_best_model:
+        torch.save(model.state_dict(), os.path.join(model_directory, 'ae_best_performing.pt'))
+        print('Best performing AE model saved')
+        save_best_model = False
 
