@@ -164,6 +164,6 @@ for view in train_views:
 
         print(f'epoch [{epoch + 1}/{num_epochs}], data trained:{100 * total / dataset_len :.3f}%, running avg training loss:{running_avg_training_losses[-1]:.4f}')
 
-        if (epoch + 1) % 1 == 0:
+        if (epoch + 1) % 10 == 0:
             torch.save(model.state_dict(), os.path.join(view + '_cnn_'+ str(epoch + 1) +'.pt'))
 
