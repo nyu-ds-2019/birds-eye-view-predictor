@@ -56,7 +56,7 @@ def resnet_multiimage_input(num_layers, pretrained=False, num_input_images=1):
 class ResnetEncoder(nn.Module):
     """Pytorch module for a resnet encoder
     """
-    def __init__(self, num_layers, pretrained, num_input_images=1):
+    def __init__(self, num_layers, pretrained, num_input_images=1, pretrained_model_path):
         super(ResnetEncoder, self).__init__()
 
         self.num_ch_enc = np.array([64, 64, 128, 256, 512])
@@ -85,7 +85,7 @@ class ResnetEncoder(nn.Module):
                                  nn.Linear(512, 4),
                                  nn.LogSoftmax(dim=1))
             
-            pretrained_dict = torch.load('/scratch/prs392/models/rotation_ssl/net_epoch_49.pth')
+            pretrained_dict = torch.load(pretrained_model_path)
             model_dict = self.encoder.state_dict()
 #             # 1. filter out unnecessary keys
 #             pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}

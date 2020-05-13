@@ -143,9 +143,9 @@ def get_args():
     parser 	= argparse.ArgumentParser(description="MonoLayout options")
     parser.add_argument("--train_views", type=str, default="front_left, front, front_right, back_left, back, back_right",
                          help="Views to be generated")
-    parser.add_argument("--data_path", type=str, default="../../artifacts/data",
+    parser.add_argument("--data_path", type=str, default="../artifacts/data",
                          help="Path to the root data directory")
-    parser.add_argument("--save_path", type=str, default="../../artifacts/data_mono",
+    parser.add_argument("--save_path", type=str, default="../artifacts/data_mono",
                          help="Path to save models")
 
     return parser.parse_args()

@@ -28,12 +28,15 @@ import dataloader
 
 def get_args():
     parser 	= argparse.ArgumentParser(description="MonoLayout options")
-    parser.add_argument("--data_path", type=str, default="",
+    parser.add_argument("--data_path", type=str, default="../artifacts/data",
                          help="Path to the root data directory")
-    parser.add_argument("--save_path", type=str, default="",
+    parser.add_argument("--save_path", type=str, default="../artifacts/mono",
                          help="Path to save models")
     parser.add_argument("--model_name", type=str, default="monolayout",
                          help="Model Name with specifications")
+
+	parser.add_argument('--rotation_model_path', type=str, default="../artifacts/models/rotation_ssl/best_rotation_net.pt",
+						help = "Rotation Pretext Model Path")
     # parser.add_argument("--split", type=str, choices=["argo", "3Dobject", "odometry"],
     #                      help="Data split for training/validation")
     parser.add_argument("--ext", type=str, default="png",
@@ -95,7 +98,7 @@ class Trainer:
         self.parameters_to_train_D = []
 
 		# Initializing models
-        self.models["encoder"] = model.Encoder(18, self.opt.height, self.opt.width, False)
+        self.models["encoder"] = model.Encoder(18, self.opt.height, self.opt.width, False, pretrained_model_path = opt.rotation_model_path)
         if self.opt.type == "both":
             self.models["static_decoder"] = model.Decoder(
                 self.models["encoder"].resnet_encoder.num_ch_enc)

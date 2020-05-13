@@ -146,9 +146,9 @@ def train_model(model, dataloaders, data_generator, train_post_transforms, crite
 
 def get_args():
     parser 	= argparse.ArgumentParser(description="MonoLayout options")
-    parser.add_argument("--data_path", type=str, default="./data",
+    parser.add_argument("--data_path", type=str, default="../artifacts/data",
                          help="Path to the root data directory")
-    parser.add_argument("--save_path", type=str, default="./models/",
+    parser.add_argument("--save_path", type=str, default="../artifacts/models/rotation_ssl",
                          help="Path to save models")
     parser.add_argument("--batch_size", type=int, default=16,
                          help="Mini-Batch size")
@@ -249,7 +249,7 @@ def main():
     f = open("{}/training_logs.txt".format('.'), "w+")
 
     if not os.path.isdir(opt.save_path):
-        os.makedirs(save_path)
+        os.makedirs(opt.save_path)
 
     checkpoint_path = opt.save_path
 

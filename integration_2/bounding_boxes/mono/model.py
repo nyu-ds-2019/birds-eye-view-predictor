@@ -109,10 +109,10 @@ class Decoder(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, num_layers, img_ht, img_wt, pretrained=True):
+    def __init__(self, num_layers, img_ht, img_wt, pretrained=True, pretrained_model_path = ""):
         super(Encoder, self).__init__()
 
-        self.resnet_encoder = ResnetEncoder(num_layers, pretrained)#opt.weights_init == "pretrained"))
+        self.resnet_encoder = ResnetEncoder(num_layers, pretrained, pretrained_model_path = pretrained_model_path )#opt.weights_init == "pretrained"))
         num_ch_enc = self.resnet_encoder.num_ch_enc
         #convolution to reduce depth and size of features before fc
         self.conv1 = Conv3x3(num_ch_enc[-1], 128)
