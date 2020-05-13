@@ -63,8 +63,8 @@ def get_args():
                          help="size of topview occupancy map")
     parser.add_argument("--num_epochs", type=int, default=100,
                          help="Max number of training epochs")
-    parser.add_argument("--log_frequency", type=int, default=5,
-                         help="Log files every x epochs")
+    parser.add_argument("--save_freq", type=int, default=5,
+                         help="Save model files every x epochs")
     parser.add_argument("--num_workers", type=int, default=12,
                          help="Number of cpu workers for dataloaders")
     parser.add_argument("--lambda_D", type=float, default=0.01,
@@ -163,15 +163,21 @@ class Trainer:
 
 
     def train(self):
+        best_iou = -1
 
         for self.epoch in range(self.opt.num_epochs):
             loss = self.run_epoch()
             print("Epoch: %d | Loss: %.4f | Discriminator Loss: %.4f"%(self.epoch, loss["loss"], 
                 loss["loss_discr"]))
 
-            if self.epoch % self.opt.log_frequency == 0:
-                self.validation()
-                self.save_model()
+            if self.epoch % self.opt.save_freq == 0:
+                iou = self.validation()
+                if iou > best_iou:
+                    best_iou = iou
+                    save_best = True
+                else:
+                    save_best = False
+                self.save_model(save_best = save_best)
 
     def run_epoch1(self):
         self.model_optimizer.step()
@@ -259,6 +265,7 @@ class Trainer:
         iou /= len(self.val_loader)
         mAP /= len(self.val_loader)
         print("Epoch: %d | Validation: mIOU: %.4f mAP: %.4f"%(self.epoch, iou[1], mAP[1]))
+        return iou[1]
 
 
 
@@ -285,7 +292,7 @@ class Trainer:
         output = loss(generated_top_view, true_top_view)
         return output.mean()
 
-    def save_model(self):
+    def save_model(self, save_best = False):
         save_path = os.path.join(self.opt.save_path, self.opt.model_name, "weights_{}".format(self.epoch))
 
         if not os.path.exists(save_path):
@@ -301,6 +308,23 @@ class Trainer:
             torch.save(state_dict, model_path)
         optim_path = os.path.join(save_path, "{}.pth".format("adam"))
         torch.save(self.model_optimizer.state_dict(), optim_path)
+        
+        if save_best == True:
+            save_path = os.path.join(self.opt.save_path, self.opt.model_name, "best")
+
+            if not os.path.exists(save_path):
+                os.makedirs(save_path)
+
+            for model_name, model in self.models.items():
+                model_path = os.path.join(save_path, "{}.pth".format(model_name))
+                state_dict = model.state_dict()
+                if model_name == "encoder":
+                    state_dict["height"] = self.opt.height
+                    state_dict["width"] = self.opt.width
+
+                torch.save(state_dict, model_path)
+            optim_path = os.path.join(save_path, "{}.pth".format("adam"))
+            torch.save(self.model_optimizer.state_dict(), optim_path)
 
     def load_model(self):
         """Load model(s) from disk

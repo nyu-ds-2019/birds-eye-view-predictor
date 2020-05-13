@@ -32,7 +32,8 @@ parser.add_option('--num-epochs', dest = 'num_epochs', default = 50, type = 'int
 parser.add_option('--train-views', dest = 'train_views', default = '', type = 'string', help = 'views to be trained (comma separated)')
 parser.add_option('--ae-model', dest = 'ae_model_path', default = '', type = 'string', help = 'model file for the trained autoencoder')
 parser.add_option('--data-directory', dest = 'data_directory', default = '../artifacts/data', type = 'string', help = 'data path')
-parser.add_option('--model-directory', dest = 'model_directory', default = '../artifacts/models', type = 'string', help = 'model save path')
+parser.add_option('--model-directory', dest = 'model_directory', default = '../artifacts/models/topview_resnet', type = 'string', help = 'model save path')
+parser.add_option('--save-freq', dest = 'save_freq', default = 10, type = 'int', help = 'model save frequency')
 
 (options, args) = parser.parse_args()
 
@@ -42,20 +43,19 @@ workers = options.num_workers
 ae_model_path = options.ae_model_path
 learning_rate = options.learning_rate
 train_views = options.train_views.replace(' ', '').split(',')
+save_freq = options.save_freq
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-model = ResNet(
-    pretrained = False,
-    ssl_pretrained = False,
-    ssl_pretrained_dict_path = None,
-    fc_layer = nn.Linear(512, 64)
-).model
-model = model.to(device)
-criterion = nn.MSELoss()
-
 
 model_directory = options.model_directory
+
+views = ['front_left', 'front', 'front_right', 'back_left', 'back', 'back_right']
+
+for view in views:
+    if not os.path.isdir(os.path.join(model_directory, view)):
+        os.makedirs(os.path.join(model_directory, view))
+
 image_folder = options.data_directory
 annotation_csv = os.path.join(image_folder, 'annotation.csv')
 train_scene_index = np.arange(106, 131)
@@ -86,8 +86,6 @@ val_loader = torch.utils.data.DataLoader(
     val_dataset, batch_size=batch_size, shuffle=True, num_workers=workers, collate_fn=collate_fn
 )
 
-optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
-
 model_ae_encoder = Autoencoder()
 model_ae_encoder.load_state_dict(torch.load(ae_model_path))
 model_ae_encoder = model_ae_encoder.encoder.to(device)
@@ -101,6 +99,20 @@ for view in train_views:
     validation_losses = []
     running_avg_training_losses = []
     views = ['front_left', 'front', 'front_right', 'back_left', 'back', 'back_right']
+
+    best_vloss = 1e10
+    save_best_model = False
+    
+    model = ResNet(
+        pretrained = False,
+        ssl_pretrained = False,
+        ssl_pretrained_dict_path = None,
+        fc_layer = nn.Linear(512, 64)
+    ).model
+    model = model.to(device)
+    criterion = nn.MSELoss()
+    
+    optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
 
     for epoch in range(num_epochs):
         torch.cuda.empty_cache()
@@ -137,33 +149,42 @@ for view in train_views:
             running_total_training_loss += float(loss)    
 
         running_avg_training_losses.append(running_total_training_loss/total)
+        
+        print(f'{view}: epoch [{epoch + 1}/{num_epochs}], data trained:{100 * total / dataset_len :.3f}%, running avg training loss:{running_avg_training_losses[-1]:.4f}')
+        
+        if (epoch + 1) % save_freq == 0:
 
-        with torch.no_grad():
-            total_vloss = 0
-            for sample, target, road_image, extra in val_loader:
-                sample = torch.stack(sample)
-                camera_image = sample[:, views.index(view), :, :, :]
-                masked_road_image_tensor = mask_road_image_by_view(road_image, view, (800, 800))
-                masked_road_image_tensor = masked_road_image_tensor[:, 0, :, :, :]
-                masked_road_image_tensor = masked_road_image_tensor.to(device)
+            torch.save(model.state_dict(), os.path.join(model_directory, view,  'cnn_'+ str(epoch + 1) +'.pt'))
 
-                with torch.no_grad():
-                    part_encoding = model_ae_encoder(masked_road_image_tensor)
+            with torch.no_grad():
+                total_vloss = 0
+                for sample, target, road_image, extra in val_loader:
+                    sample = torch.stack(sample)
+                    camera_image = sample[:, views.index(view), :, :, :]
+                    masked_road_image_tensor = mask_road_image_by_view(road_image, view, (800, 800))
+                    masked_road_image_tensor = masked_road_image_tensor[:, 0, :, :, :]
+                    masked_road_image_tensor = masked_road_image_tensor.to(device)
 
-                img = camera_image
-                expected_output = part_encoding
-                
-                img = img.to(device)
-                expected_output = expected_output.to(device)
+                    with torch.no_grad():
+                        part_encoding = model_ae_encoder(masked_road_image_tensor)
 
-                voutput = model(img)
-                vloss = criterion(voutput, expected_output)
-                total_vloss += vloss
-            validation_losses.append(total_vloss)
+                    img = camera_image
+                    expected_output = part_encoding
 
+                    img = img.to(device)
+                    expected_output = expected_output.to(device)
 
-        print(f'epoch [{epoch + 1}/{num_epochs}], data trained:{100 * total / dataset_len :.3f}%, running avg training loss:{running_avg_training_losses[-1]:.4f}')
+                    voutput = model(img)
+                    vloss = criterion(voutput, expected_output)
+                    total_vloss += float(vloss)
+                validation_losses.append(total_vloss)
 
-        if (epoch + 1) % 10 == 0:
-            torch.save(model.state_dict(), os.path.join(view + '_cnn_'+ str(epoch + 1) +'.pt'))
+            print("Total val loss at epoch " + str(epoch + 1) + " is : " + str(validation_losses[-1]))
+            
+            if total_vloss < best_vloss:
+                best_vloss = total_vloss
+                print(f'Best performing validation model found at {epoch + 1}')
+                torch.save(model.state_dict(), os.path.join(model_directory, view, 'best_performing.pt'))
+                print('Best performing ' +view+ ' ResNet model saved')
+                save_best_model = False
 

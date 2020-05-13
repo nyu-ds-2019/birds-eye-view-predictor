@@ -130,7 +130,7 @@ def train_model(model, dataloaders, data_generator, train_post_transforms, crite
             if phase == 'val' and top_1_acc > best_acc:
                 best_acc = top_1_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
-                torch.save(model.state_dict(), '%s/best_rotation_net.pt' % (checkpoint_path))
+                torch.save(model.state_dict(), '%s/best_performing.pt' % (checkpoint_path))
 
         if (epoch + 1) % save_freq == 0:
             torch.save(model.state_dict(), '%s/rotation_net_epoch_%d.pt' % (checkpoint_path, epoch))
